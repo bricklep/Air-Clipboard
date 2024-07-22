@@ -1,6 +1,8 @@
 import sys
 import qrcode
 import boto3
+import uuid
+from PIL import ImageGrab, Image
 from botocore.exceptions import NoCredentialsError
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtGui import QPixmap
@@ -85,10 +87,46 @@ class QRApp(QMainWindow):
         except NoCredentialsError:
             return "Credentials not available"
 
-    # Usage
+     # Usage
+    # bucket_name = 'my-qr-air-clipboard'
+    # object_name = 'test_file.txt'
+    # signed_url = generate_signed_url(bucket_name, object_name)
+    # print("Signed URL:", signed_url)
+
+    def upload_clipboard_image_to_s3(bucket_name):
+        try:
+            # Get image from clipboard
+            img = ImageGrab.grabclipboard()
+
+            if isinstance(img, Image.Image):
+                # Create a unique file name
+                object_name = f"images/{uuid.uuid4()}.png"
+                
+                # Save the image to a BytesIO object
+                img_byte_array = BytesIO()
+                img.save(img_byte_array, format="PNG")
+                img_byte_array.seek(0)
+                
+                # Upload to S3
+                s3_client = boto3.client('s3')
+                s3_client.upload_fileobj(img_byte_array, bucket_name, object_name)
+
+                # Generate signed URL
+                signed_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': bucket_name, 'Key': object_name},
+                    ExpiresIn=3600  # URL valid for 1 hour
+                )
+                return signed_url
+
+            else:
+                return "No image found in clipboard"
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
     bucket_name = 'my-qr-air-clipboard'
-    object_name = 'test_file.txt'
-    signed_url = generate_signed_url(bucket_name, object_name)
+    signed_url = upload_clipboard_image_to_s3(bucket_name)
     print("Signed URL:", signed_url)
     
 
