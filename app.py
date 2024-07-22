@@ -1,6 +1,7 @@
 import sys
 import qrcode
 import boto3
+from botocore.exceptions import NoCredentialsError
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
@@ -70,7 +71,26 @@ class QRApp(QMainWindow):
             print(f"Error: {e}")
 
     # Usage
-    upload_test_file('my-qr-air-clipboard', 'test_file.txt')
+    #upload_test_file('my-qr-air-clipboard', 'test_file.txt')
+
+    def generate_signed_url(bucket_name, object_name, expiration=3600):
+        s3_client = boto3.client('s3')
+        try:
+            response = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': bucket_name, 'Key': object_name},
+                ExpiresIn=120
+            )
+            return response
+        except NoCredentialsError:
+            return "Credentials not available"
+
+    # Usage
+    bucket_name = 'my-qr-air-clipboard'
+    object_name = 'test_file.txt'
+    signed_url = generate_signed_url(bucket_name, object_name)
+    print("Signed URL:", signed_url)
+    
 
 
 if __name__ == "__main__":
