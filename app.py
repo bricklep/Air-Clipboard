@@ -73,7 +73,7 @@ class QRApp(QMainWindow):
             print(f"Error: {e}")
 
     # Usage
-    #upload_test_file('my-qr-air-clipboard', 'test_file.txt')
+    upload_test_file('my-qr-air-clipboard', 'test_file.txt')
 
     def generate_signed_url(bucket_name, object_name, expiration=3600):
         s3_client = boto3.client('s3')
